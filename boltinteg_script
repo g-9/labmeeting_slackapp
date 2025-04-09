@@ -1,0 +1,51 @@
+from slack_bolt import App
+import pandas as pd
+from datetime import datetime
+
+# Initialize the Bolt app with your bot token and signing secret
+app = App(
+    token="your_slack_bot_token",
+    signing_secret="your_slack_signing_secret"
+)
+
+# Channel ID where reminders will be sent
+CHANNEL_ID = "your_channel_id"
+
+def read_excel(file_path):
+    """Read the Excel file and return as a DataFrame."""
+    df = pd.read_excel(file_path)
+    return df
+
+def send_reminder(task, members, channel_id):
+    """Send a message to Slack using Bolt's app client."""
+    message = f"Reminder: {task} - {members}"
+    try:
+        app.client.chat_postMessage(channel=channel_id, text=message)
+        print(f"Message sent: {message}")
+    except Exception as e:
+        print(f"Error sending message: {e}")
+
+@app.event("app_mention")
+def handle_mention_events(body, say):
+    """Handle mentions to trigger reminders."""
+    say("Hello! I am here to send reminders from the Excel sheet.")
+
+def process_reminders(file_path):
+    """Read the Excel file and send reminders for today's tasks."""
+    df = read_excel(file_path)
+    today = datetime.today().strftime('%Y-%m-%d')
+
+    for _, row in df.iterrows():
+        reminder_date = row['Date'].strftime('%Y-%m-%d')  # Ensure the date is formatted as a string
+        if reminder_date == today:
+            send_reminder(row['Task'], row['Members'], CHANNEL_ID)
+
+if __name__ == "__main__":
+    # Path to the Excel file
+    file_path = "reminders.xlsx"
+
+    # Process reminders
+    process_reminders(file_path)
+
+    # Start the Bolt app
+    app.start(port=3000)
