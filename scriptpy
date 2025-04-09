@@ -1,0 +1,48 @@
+import pandas as pd
+from slack_sdk import WebClient
+from slack_sdk.errors import SlackApiError
+from datetime import datetime
+
+#COPILOT
+
+# Slack bot token (ensure it's stored securely)
+SLACK_BOT_TOKEN = "your_slack_bot_token"
+CHANNEL_ID = "your_channel_id"  # Replace with the channel ID where you want to send reminders
+
+# Initialize the Slack client
+client = WebClient(token=SLACK_BOT_TOKEN)
+
+def read_excel(file_path):
+    # Load the Excel sheet into a pandas DataFrame
+    df = pd.read_excel(file_path)
+    return df
+
+def send_reminder(message, channel_id):
+    try:
+        # Send a message to the specified Slack channel
+        response = client.chat_postMessage(channel=channel_id, text=message)
+        print(f"Message sent: {response['message']['text']}")
+    except SlackApiError as e:
+        print(f"Error sending message: {e.response['error']}")
+
+def process_reminders(file_path):
+    # Read the Excel sheet
+    df = read_excel(file_path)
+
+    # Get today's date
+    today = datetime.today().strftime('%Y-%m-%d')
+
+    # Loop through the rows in the DataFrame
+    for _, row in df.iterrows():
+        reminder_date = row['Date'].strftime('%Y-%m-%d')  # Ensure the date is formatted as a string
+        if reminder_date == today:
+            # Create the reminder message
+            message = f"Reminder: {row['Task']} - {row['Members']}"
+            send_reminder(message, CHANNEL_ID)
+
+if __name__ == "__main__":
+    # Path to the Excel file
+    file_path = "reminders.xlsx"
+
+    # Process the reminders
+    process_reminders(file_path)
